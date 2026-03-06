@@ -1,35 +1,43 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { TaskItem } from './components/TaskItem';
+import type { Task } from './types/task.types';
+import { Container, Typography } from '@mui/material';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Task di esempio per testare
+  const taskEsempio: Task = {
+    id: 1,
+    title: "Task di test",
+    description: "Questa è una task di esempio per testare il componente",
+    priority: "high",
+    status: "in_progress",
+    release_date: "2026-03-10",
+    created_at: "2026-03-06T10:00:00Z",
+    updated_at: "2026-03-06T10:00:00Z"
+  };
+
+  const handleEdit = (task: Task) => {
+    console.log("Modifica task:", task);
+    alert(`Modifica task: ${task.title}`);
+  };
+
+  const handleDelete = (id: number) => {
+    console.log("Elimina task:", id);
+    alert(`Elimina task ID: ${id}`);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Test TaskItem
+      </Typography>
+
+      <TaskItem
+        task={taskEsempio}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+    </Container>
+  );
 }
 
-export default App
+export default App;
