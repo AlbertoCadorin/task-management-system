@@ -7,7 +7,12 @@ import {
   Snackbar,
   Alert,
   Chip,
-  Paper
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { TaskList } from './components/TaskList';
@@ -20,6 +25,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [openForm, setOpenForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const stats = {
@@ -65,7 +71,7 @@ function App() {
         await taskService.createTask(taskData);
         showSnackbar('Task creata con successo! 🎉', 'success');
       }
-      loadTasks();
+      await loadTasks();
       setOpenForm(false);
       setEditingTask(null);
     } catch (error) {
@@ -80,20 +86,31 @@ function App() {
     setOpenForm(true);
   };
 
-  // Elimina task
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questa task?')) {
+  // Apri conferma eliminazione
+  const handleDelete = (id: number) => {
+    setTaskToDelete(id);
+  };
+
+  // Conferma eliminazione task
+  const handleConfirmDelete = async () => {
+    if (taskToDelete === null) {
       return;
     }
 
     try {
-      await taskService.deleteTask(id);
+      await taskService.deleteTask(taskToDelete);
       showSnackbar('Task eliminata con successo! 🗑️', 'success');
-      loadTasks();
+      await loadTasks();
+      setTaskToDelete(null);
     } catch (error) {
       showSnackbar('Errore nell\'eliminazione della task', 'error');
       console.error(error);
     }
+  };
+
+  // Chiudi conferma eliminazione
+  const handleCloseDeleteDialog = () => {
+    setTaskToDelete(null);
   };
 
   // Apri form per nuova task
@@ -198,6 +215,22 @@ function App() {
         onSubmit={handleSubmit}
         editTask={editingTask}
       />
+
+      {/* Conferma eliminazione */}
+      <Dialog open={taskToDelete !== null} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>Conferma eliminazione</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sei sicuro di voler eliminare questa task? Questa azione non puo essere annullata.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Annulla</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDelete}>
+            Conferma
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Notifiche */}
       <Snackbar

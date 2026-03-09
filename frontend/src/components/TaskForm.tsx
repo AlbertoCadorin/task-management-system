@@ -19,7 +19,7 @@ import type { Task, CreateTaskDto } from '../types/task.types';
 interface TaskFormProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (task: CreateTaskDto) => void;
+    onSubmit: (task: CreateTaskDto) => Promise<void>;
     editTask?: Task | null;
 }
 
@@ -52,10 +52,9 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
         }
     }, [editTask, open])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        onSubmit(formData)
-        onClose()
+        await onSubmit(formData)
     }
 
     const handleChange = (field: keyof CreateTaskDto, value: CreateTaskDto[keyof CreateTaskDto]) => {
