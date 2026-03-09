@@ -5,7 +5,9 @@ import {
   Button,
   Box,
   Snackbar,
-  Alert
+  Alert,
+  Chip,
+  Paper
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { TaskList } from './components/TaskList';
@@ -19,6 +21,13 @@ function App() {
   const [openForm, setOpenForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+
+  const stats = {
+    total: tasks.length,
+    todo: tasks.filter((task) => task.status === 'todo').length,
+    inProgress: tasks.filter((task) => task.status === 'in_progress').length,
+    done: tasks.filter((task) => task.status === 'done').length
+  };
 
   // Carica tutte le task
   const loadTasks = async () => {
@@ -100,29 +109,87 @@ function App() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h3" component="h1" fontWeight="bold">
-          📋 Task Manager
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleNewTask}
-          size="large"
+    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      <Box className="fade-in-up" mb={3}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2.5, md: 3.5 },
+            borderRadius: 4,
+            border: '1px solid rgba(23, 34, 38, 0.08)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fcfb 100%)'
+          }}
         >
-          Nuova Task
-        </Button>
+          <Box
+            display="flex"
+            flexDirection={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            gap={2}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            mb={2}
+          >
+            <Box>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{
+                  fontFamily: 'Space Grotesk, Manrope, sans-serif',
+                  fontWeight: 700,
+                  fontSize: { xs: '1.9rem', md: '2.5rem' }
+                }}
+              >
+                Task Manager
+              </Typography>
+              <Typography color="text.secondary" mt={0.75}>
+                Organizza il lavoro e monitora l'avanzamento in modo semplice.
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleNewTask}
+              size="large"
+              sx={{
+                alignSelf: { xs: 'flex-start', md: 'auto' },
+                borderRadius: 999,
+                px: 2.5,
+                boxShadow: '0 10px 24px rgba(14, 124, 102, 0.24)',
+                bgcolor: '#0e7c66',
+                '&:hover': { bgcolor: '#0b5f4f' }
+              }}
+            >
+              Nuova Task
+            </Button>
+          </Box>
+
+          <Box display="flex" flexWrap="wrap" gap={1}>
+            <Chip label={`Totali: ${stats.total}`} sx={{ fontWeight: 700 }} />
+            <Chip label={`Da fare: ${stats.todo}`} color="default" variant="outlined" />
+            <Chip label={`In corso: ${stats.inProgress}`} color="warning" variant="outlined" />
+            <Chip label={`Completate: ${stats.done}`} color="success" variant="outlined" />
+          </Box>
+        </Paper>
       </Box>
 
-      {/* Lista Task */}
-      <TaskList
-        tasks={tasks}
-        loading={loading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      <Paper
+        elevation={0}
+        className="fade-in-up"
+        sx={{
+          p: { xs: 2, md: 3 },
+          borderRadius: 4,
+          border: '1px solid rgba(23, 34, 38, 0.08)',
+          bgcolor: '#ffffffd9',
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <TaskList
+          tasks={tasks}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </Paper>
 
       {/* Form Dialog */}
       <TaskForm

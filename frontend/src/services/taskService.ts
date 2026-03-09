@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { Task, CreateTaskDTO } from '../types/task.types';
+import type { Task, CreateTaskDto } from '../types/task.types';
 
 export const taskService = {
     // GET - Ottieni tutte le task
@@ -15,7 +15,7 @@ export const taskService = {
     },
 
     // POST - Crea una nuova task
-    createTask: async (task: CreateTaskDTO): Promise<Task> => {
+    createTask: async (task: CreateTaskDto): Promise<Task> => {
         const response = await api.post<Task>('/tasks', task);
         return response.data;
     },

@@ -19,6 +19,12 @@ const statusLabels = {
     done: 'Fatto'
 } as const;
 
+const priorityLabels = {
+    low: 'Bassa',
+    medium: 'Media',
+    high: 'Alta'
+} as const;
+
 const getPriorityColor = (priority: unknown) => {
     if (priority === 'low' || priority === 'medium' || priority === 'high') {
         return priorityColors[priority];
@@ -33,44 +39,64 @@ const getStatusLabel = (status: unknown) => {
     return 'Sconosciuto';
 };
 
+const getPriorityLabel = (priority: unknown) => {
+    if (priority === 'low' || priority === 'medium' || priority === 'high') {
+        return priorityLabels[priority];
+    }
+    return 'Sconosciuta';
+};
+
 export const TaskItem = ({ task, onEdit, onDelete }: TaskItemProps) => {
     return (
-        <Card sx={{ mb: 2 }}>
+        <Card
+            sx={{
+                borderRadius: 3,
+                border: '1px solid rgba(23, 34, 38, 0.1)',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f9fcfb 100%)',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 14px 28px rgba(23, 34, 38, 0.08)'
+                }
+            }}
+        >
             <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="h6" component="div">
+                <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1.5} mb={1.25} flexDirection={{ xs: 'column', sm: 'row' }}>
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: 700 }}>
                         {task.title}
                     </Typography>
-                    <Box display="flex" gap={1}>
+                    <Box display="flex" gap={1} flexWrap="wrap">
                         <Chip
-                            label={task.priority}
+                            label={`Priorita: ${getPriorityLabel(task.priority)}`}
                             color={getPriorityColor(task.priority)}
                             size="small"
+                            sx={{ fontWeight: 700 }}
                         />
                         <Chip
                             label={getStatusLabel(task.status)}
                             variant="outlined"
                             size="small"
+                            sx={{ fontWeight: 600 }}
                         />
                     </Box>
                 </Box>
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
                     {task.description}
                 </Typography>
 
                 {task.release_date && (
-                    <Typography variant="caption" color="text.secondary" display="block" mt={1}>
+                    <Typography variant="caption" color="text.secondary" display="block" mt={1.5}>
                         Data rilascio: {new Date(task.release_date).toLocaleDateString('it-IT')}
                     </Typography>
                 )}
             </CardContent>
 
-            <CardActions>
-                <Button size="small" onClick={() => onEdit(task)}>
+            <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
+                <Button size="small" variant="outlined" onClick={() => onEdit(task)}>
                     Modifica
                 </Button>
-                <Button size="small" color="error" onClick={() => onDelete(task.id)}>
+                <Button size="small" color="error" variant="text" onClick={() => onDelete(task.id)}>
                     Elimina
                 </Button>
             </CardActions>

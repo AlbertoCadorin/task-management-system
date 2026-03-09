@@ -10,7 +10,8 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Box
+    Box,
+    Typography
 } from '@mui/material';
 import type { Task, CreateTaskDto } from '../types/task.types';
 
@@ -57,15 +58,29 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
         onClose()
     }
 
-    const handleChange = (field: keyof CreateTaskDto, value: any) => {
+    const handleChange = (field: keyof CreateTaskDto, value: CreateTaskDto[keyof CreateTaskDto]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+                sx: {
+                    borderRadius: 3,
+                    border: '1px solid rgba(23, 34, 38, 0.1)',
+                    background: 'linear-gradient(165deg, #ffffff 0%, #f7fbfa 100%)'
+                }
+            }}
+        >
             <form onSubmit={handleSubmit}>
                 <DialogTitle>
-                    {editTask ? 'Modifica Task' : 'Nuova Task'}
+                    <Typography variant="h5" fontWeight={700}>
+                        {editTask ? 'Modifica Task' : 'Nuova Task'}
+                    </Typography>
                 </DialogTitle>
 
                 <DialogContent>
@@ -74,6 +89,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                             label="Titolo"
                             value={formData.title}
                             onChange={(e) => handleChange('title', e.target.value)}
+                            placeholder="Es. Preparare demo cliente"
                             required
                             fullWidth
                         />
@@ -84,6 +100,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                             onChange={(e) => handleChange('description', e.target.value)}
                             multiline
                             rows={3}
+                            placeholder="Dettagli utili per eseguire la task"
                             fullWidth
                         />
 
@@ -127,8 +144,16 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={onClose}>Annulla</Button>
-                    <Button type="submit" variant="contained">
+                    <Button onClick={onClose} variant="text">Annulla</Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        sx={{
+                            borderRadius: 999,
+                            bgcolor: '#0e7c66',
+                            '&:hover': { bgcolor: '#0b5f4f' }
+                        }}
+                    >
                         {editTask ? 'Salva' : 'Crea'}
                     </Button>
                 </DialogActions>
