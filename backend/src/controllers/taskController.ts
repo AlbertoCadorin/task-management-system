@@ -13,6 +13,62 @@ interface Task extends RowDataPacket {
     updated_at: string;
 }
 
+const PRIORITIES = ['low', 'medium', 'high'] as const;
+const STATUSES = ['todo', 'in_progress', 'done'] as const;
+const MAX_TITLE_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 500;
+
+const isValidDateString = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+    }
+
+    const parsed = Date.parse(value);
+    return !Number.isNaN(parsed);
+};
+
+const normalizeTaskInput = (body: Request['body']) => {
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const description = typeof body.description === 'string' ? body.description.trim() : '';
+    const priority = body.priority as Task['priority'] | undefined;
+    const status = body.status as Task['status'] | undefined;
+    const release_date = body.release_date === '' ? null : (body.release_date ?? null);
+
+    return { title, description, priority, status, release_date };
+};
+
+const validateTaskInput = (input: ReturnType<typeof normalizeTaskInput>) => {
+    const errors: string[] = [];
+
+    if (!input.title) {
+        errors.push('Il titolo e obbligatorio');
+    } else if (input.title.length > MAX_TITLE_LENGTH) {
+        errors.push(`Il titolo non puo superare ${MAX_TITLE_LENGTH} caratteri`);
+    }
+
+    if (input.description.length > MAX_DESCRIPTION_LENGTH) {
+        errors.push(`La descrizione non puo superare ${MAX_DESCRIPTION_LENGTH} caratteri`);
+    }
+
+    if (input.priority && !PRIORITIES.includes(input.priority)) {
+        errors.push('Priorita non valida');
+    }
+
+    if (input.status && !STATUSES.includes(input.status)) {
+        errors.push('Stato non valido');
+    }
+
+    if (input.release_date !== null && typeof input.release_date !== 'string') {
+        errors.push('Data di rilascio non valida');
+    }
+
+    if (typeof input.release_date === 'string' && !isValidDateString(input.release_date)) {
+        errors.push('Data di rilascio non valida');
+    }
+
+    return errors;
+};
+
 // GET - Ottieni tutte le task
 export const getAllTasks = async (req: Request, res: Response) => {
     try {
@@ -28,7 +84,13 @@ export const getAllTasks = async (req: Request, res: Response) => {
 export const getTaskById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const [rows] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [id]);
+        const taskId = Number(id);
+
+        if (!Number.isInteger(taskId) || taskId <= 0) {
+            return res.status(400).json({ error: 'ID non valido' });
+        }
+
+        const [rows] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [taskId]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Task non trovata' });
@@ -44,16 +106,22 @@ export const getTaskById = async (req: Request, res: Response) => {
 // POST - Crea una nuova task
 export const createTask = async (req: Request, res: Response) => {
     try {
-        const { title, description, priority, status, release_date } = req.body;
+        const input = normalizeTaskInput(req.body);
+        const errors = validateTaskInput(input);
 
-        // Validazione
-        if (!title) {
-            return res.status(400).json({ error: 'Il titolo è obbligatorio' });
+        if (errors.length > 0) {
+            return res.status(400).json({ error: errors.join('. ') });
         }
 
         const [result] = await pool.query<ResultSetHeader>(
             'INSERT INTO tasks (title, description, priority, status, release_date) VALUES (?, ?, ?, ?, ?)',
-            [title, description || '', priority || 'medium', status || 'todo', release_date || null]
+            [
+                input.title,
+                input.description,
+                input.priority || 'medium',
+                input.status || 'todo',
+                input.release_date || null
+            ]
         );
 
         const [newTask] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
@@ -69,18 +137,36 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { title, description, priority, status, release_date } = req.body;
+        const taskId = Number(id);
+
+        if (!Number.isInteger(taskId) || taskId <= 0) {
+            return res.status(400).json({ error: 'ID non valido' });
+        }
+
+        const input = normalizeTaskInput(req.body);
+        const errors = validateTaskInput(input);
+
+        if (errors.length > 0) {
+            return res.status(400).json({ error: errors.join('. ') });
+        }
 
         const [result] = await pool.query<ResultSetHeader>(
             'UPDATE tasks SET title = ?, description = ?, priority = ?, status = ?, release_date = ? WHERE id = ?',
-            [title, description, priority, status, release_date, id]
+            [
+                input.title,
+                input.description,
+                input.priority || 'medium',
+                input.status || 'todo',
+                input.release_date || null,
+                taskId
+            ]
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Task non trovata' });
         }
 
-        const [updatedTask] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [id]);
+        const [updatedTask] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [taskId]);
 
         res.json(updatedTask[0]);
     } catch (error) {
@@ -93,8 +179,13 @@ export const updateTask = async (req: Request, res: Response) => {
 export const deleteTask = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const taskId = Number(id);
 
-        const [result] = await pool.query<ResultSetHeader>('DELETE FROM tasks WHERE id = ?', [id]);
+        if (!Number.isInteger(taskId) || taskId <= 0) {
+            return res.status(400).json({ error: 'ID non valido' });
+        }
+
+        const [result] = await pool.query<ResultSetHeader>('DELETE FROM tasks WHERE id = ?', [taskId]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Task non trovata' });

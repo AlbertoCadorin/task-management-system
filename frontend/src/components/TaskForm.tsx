@@ -31,6 +31,41 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
         status: 'todo',
         release_date: undefined
     })
+    const [errors, setErrors] = useState<{ title?: string; description?: string; release_date?: string }>({})
+
+    const MAX_TITLE_LENGTH = 120
+    const MAX_DESCRIPTION_LENGTH = 500
+
+    const isValidDateString = (value: string) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return false
+        }
+
+        const parsed = Date.parse(value)
+        return !Number.isNaN(parsed)
+    }
+
+    const validateForm = (data: CreateTaskDto) => {
+        const nextErrors: { title?: string; description?: string; release_date?: string } = {}
+
+        const title = data.title.trim()
+        if (!title) {
+            nextErrors.title = 'Il titolo e obbligatorio'
+        } else if (title.length > MAX_TITLE_LENGTH) {
+            nextErrors.title = `Il titolo non puo superare ${MAX_TITLE_LENGTH} caratteri`
+        }
+
+        const description = (data.description || '').trim()
+        if (description.length > MAX_DESCRIPTION_LENGTH) {
+            nextErrors.description = `La descrizione non puo superare ${MAX_DESCRIPTION_LENGTH} caratteri`
+        }
+
+        if (data.release_date && !isValidDateString(data.release_date)) {
+            nextErrors.release_date = 'Data di rilascio non valida'
+        }
+
+        return nextErrors
+    }
 
     useEffect(() => {
         if (editTask) {
@@ -50,15 +85,32 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                 release_date: undefined
             })
         }
+        setErrors({})
     }, [editTask, open])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        await onSubmit(formData)
+        const normalized: CreateTaskDto = {
+            ...formData,
+            title: formData.title.trim(),
+            description: (formData.description || '').trim(),
+            release_date: formData.release_date || undefined
+        }
+        const validationErrors = validateForm(normalized)
+
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors)
+            return
+        }
+
+        await onSubmit(normalized)
     }
 
     const handleChange = (field: keyof CreateTaskDto, value: CreateTaskDto[keyof CreateTaskDto]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
+        if (field === 'title' || field === 'description' || field === 'release_date') {
+            setErrors(prev => ({ ...prev, [field]: undefined }))
+        }
     }
 
     return (
@@ -91,6 +143,8 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                             placeholder="Es. Preparare demo cliente"
                             required
                             fullWidth
+                            error={Boolean(errors.title)}
+                            helperText={errors.title}
                         />
 
                         <TextField
@@ -101,6 +155,8 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                             rows={3}
                             placeholder="Dettagli utili per eseguire la task"
                             fullWidth
+                            error={Boolean(errors.description)}
+                            helperText={errors.description}
                         />
 
                         <FormControl fullWidth>
@@ -138,6 +194,8 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
                                 inputLabel: { shrink: true }
                             }}
                             fullWidth
+                            error={Boolean(errors.release_date)}
+                            helperText={errors.release_date}
                         />
                     </Box>
                 </DialogContent>
