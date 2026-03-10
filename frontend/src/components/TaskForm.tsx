@@ -14,6 +14,7 @@ import {
     Typography
 } from '@mui/material';
 import type { Task, CreateTaskDto } from '../types/task.types';
+import { validateTaskInput, type TaskFormErrors } from '../utils/taskValidation';
 
 
 interface TaskFormProps {
@@ -31,42 +32,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
         status: 'todo',
         release_date: undefined
     })
-    const [errors, setErrors] = useState<{ title?: string; description?: string; release_date?: string }>({})
-
-    const MAX_TITLE_LENGTH = 120
-    const MAX_DESCRIPTION_LENGTH = 500
-
-    // Accept only ISO-like date values from the date input.
-    const isValidDateString = (value: string) => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            return false
-        }
-
-        const parsed = Date.parse(value)
-        return !Number.isNaN(parsed)
-    }
-
-    const validateForm = (data: CreateTaskDto) => {
-        const nextErrors: { title?: string; description?: string; release_date?: string } = {}
-
-        const title = data.title.trim()
-        if (!title) {
-            nextErrors.title = 'Il titolo e obbligatorio'
-        } else if (title.length > MAX_TITLE_LENGTH) {
-            nextErrors.title = `Il titolo non puo superare ${MAX_TITLE_LENGTH} caratteri`
-        }
-
-        const description = (data.description || '').trim()
-        if (description.length > MAX_DESCRIPTION_LENGTH) {
-            nextErrors.description = `La descrizione non puo superare ${MAX_DESCRIPTION_LENGTH} caratteri`
-        }
-
-        if (data.release_date && !isValidDateString(data.release_date)) {
-            nextErrors.release_date = 'Data di rilascio non valida'
-        }
-
-        return nextErrors
-    }
+    const [errors, setErrors] = useState<TaskFormErrors>({})
 
     // Keep local form state in sync when dialog opens for create vs edit.
     useEffect(() => {
@@ -99,7 +65,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
             description: (formData.description || '').trim(),
             release_date: formData.release_date || undefined
         }
-        const validationErrors = validateForm(normalized)
+        const validationErrors = validateTaskInput(normalized)
 
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors)
