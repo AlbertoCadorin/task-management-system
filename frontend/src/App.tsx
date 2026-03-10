@@ -35,7 +35,7 @@ function App() {
     done: tasks.filter((task) => task.status === 'done').length
   };
 
-  // Carica tutte le task
+  // Load all tasks
   const loadTasks = async () => {
     setLoading(true);
     try {
@@ -49,25 +49,25 @@ function App() {
     }
   };
 
-  // Carica task all'avvio
+  // Load tasks on startup
   useEffect(() => {
     loadTasks();
   }, []);
 
-  // Mostra notifica
+  // Show notification
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Crea o aggiorna task
+  // Create or update task
   const handleSubmit = async (taskData: CreateTaskDto) => {
     try {
       if (editingTask) {
-        // Aggiorna task esistente
+        // Update existing task
         await taskService.updateTask(editingTask.id, taskData);
         showSnackbar('Task aggiornata con successo! ✅', 'success');
       } else {
-        // Crea nuova task
+        // Create new task
         await taskService.createTask(taskData);
         showSnackbar('Task creata con successo! 🎉', 'success');
       }
@@ -80,18 +80,18 @@ function App() {
     }
   };
 
-  // Apri form per modifica
+  // Open form in edit mode
   const handleEdit = (task: Task) => {
     setEditingTask(task);
     setOpenForm(true);
   };
 
-  // Apri conferma eliminazione
+  // Open delete confirmation
   const handleDelete = (id: number) => {
     setTaskToDelete(id);
   };
 
-  // Conferma eliminazione task
+  // Confirm task deletion
   const handleConfirmDelete = async () => {
     if (taskToDelete === null) {
       return;
@@ -108,18 +108,18 @@ function App() {
     }
   };
 
-  // Chiudi conferma eliminazione
+  // Close delete confirmation
   const handleCloseDeleteDialog = () => {
     setTaskToDelete(null);
   };
 
-  // Apri form per nuova task
+  // Open form for new task
   const handleNewTask = () => {
     setEditingTask(null);
     setOpenForm(true);
   };
 
-  // Chiudi form
+  // Close form
   const handleCloseForm = () => {
     setOpenForm(false);
     setEditingTask(null);
@@ -216,7 +216,7 @@ function App() {
         editTask={editingTask}
       />
 
-      {/* Conferma eliminazione */}
+      {/* Delete confirmation dialog */}
       <Dialog open={taskToDelete !== null} onClose={handleCloseDeleteDialog}>
         <DialogTitle>Conferma eliminazione</DialogTitle>
         <DialogContent>
@@ -232,7 +232,7 @@ function App() {
         </DialogActions>
       </Dialog>
 
-      {/* Notifiche */}
+      {/* Notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { testConnection } from './config/database';
 import taskRoutes from './routers/taskRouters';
 
-// Carica variabili d'ambiente
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -18,23 +18,23 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/tasks', taskRoutes);
 
-// Route di test
+// Health-check route
 app.get('/', (req, res) => {
     res.json({ message: 'Task Management API funzionante! 🚀' });
 });
 
-// Route non trovata
+// Fallback route
 app.use((req, res) => {
     res.status(404).json({ error: 'Route non trovata' });
 });
 
-// Avvio del server
+// Start server
 const startServer = async () => {
     try {
-        // Test connessione database
+        // Test database connection
         await testConnection();
 
-        // Avvia server
+        // Start HTTP server
         app.listen(PORT, () => {
             console.log(`🚀 Server avviato su http://localhost:${PORT}`);
             console.log(`📡 API disponibili su http://localhost:${PORT}/api/tasks`);

@@ -36,6 +36,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
     const MAX_TITLE_LENGTH = 120
     const MAX_DESCRIPTION_LENGTH = 500
 
+    // Accept only ISO-like date values from the date input.
     const isValidDateString = (value: string) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
             return false
@@ -67,6 +68,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
         return nextErrors
     }
 
+    // Keep local form state in sync when dialog opens for create vs edit.
     useEffect(() => {
         if (editTask) {
             setFormData({
@@ -90,6 +92,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        // Normalize values once so frontend and backend validate the same shape.
         const normalized: CreateTaskDto = {
             ...formData,
             title: formData.title.trim(),
@@ -108,6 +111,7 @@ export const TaskForm = ({ open, onClose, onSubmit, editTask }: TaskFormProps) =
 
     const handleChange = (field: keyof CreateTaskDto, value: CreateTaskDto[keyof CreateTaskDto]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
+        // Clear only the error related to the field currently being edited.
         if (field === 'title' || field === 'description' || field === 'release_date') {
             setErrors(prev => ({ ...prev, [field]: undefined }))
         }

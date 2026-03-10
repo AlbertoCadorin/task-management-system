@@ -13,7 +13,7 @@ export const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Test della connessione
+// Connection test
 export const testConnection = async () => {
     try {
         const connection = await pool.getConnection();

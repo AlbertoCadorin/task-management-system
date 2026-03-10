@@ -27,6 +27,7 @@ const isValidDateString = (value: string) => {
     return !Number.isNaN(parsed);
 };
 
+// Normalize request payload to avoid duplicated checks inside handlers.
 const normalizeTaskInput = (body: Request['body']) => {
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const description = typeof body.description === 'string' ? body.description.trim() : '';
@@ -37,6 +38,7 @@ const normalizeTaskInput = (body: Request['body']) => {
     return { title, description, priority, status, release_date };
 };
 
+// Centralized validation used by both create and update endpoints.
 const validateTaskInput = (input: ReturnType<typeof normalizeTaskInput>) => {
     const errors: string[] = [];
 
@@ -69,7 +71,7 @@ const validateTaskInput = (input: ReturnType<typeof normalizeTaskInput>) => {
     return errors;
 };
 
-// GET - Ottieni tutte le task
+// GET - Fetch all tasks
 export const getAllTasks = async (req: Request, res: Response) => {
     try {
         const [rows] = await pool.query<Task[]>('SELECT * FROM tasks ORDER BY created_at DESC');
@@ -80,7 +82,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
     }
 };
 
-// GET - Ottieni una task per ID
+// GET - Fetch task by ID
 export const getTaskById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -103,7 +105,7 @@ export const getTaskById = async (req: Request, res: Response) => {
     }
 };
 
-// POST - Crea una nuova task
+// POST - Create a new task
 export const createTask = async (req: Request, res: Response) => {
     try {
         const input = normalizeTaskInput(req.body);
@@ -133,7 +135,7 @@ export const createTask = async (req: Request, res: Response) => {
     }
 };
 
-// PUT - Aggiorna una task
+// PUT - Update a task
 export const updateTask = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -175,7 +177,7 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 };
 
-// DELETE - Elimina una task
+// DELETE - Delete a task
 export const deleteTask = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
