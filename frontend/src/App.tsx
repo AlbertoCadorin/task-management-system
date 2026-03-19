@@ -8,6 +8,7 @@ import {
   Alert,
   Chip,
   Paper,
+  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -15,6 +16,7 @@ import {
   DialogActions
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import type { AxiosError } from 'axios';
 import { TaskList } from './components/TaskList';
 import { TaskForm } from './components/TaskForm';
 import { taskService } from './services/taskService';
@@ -27,6 +29,8 @@ function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [undoDeleteOpen, setUndoDeleteOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ task: Task; timeoutId: number } | null>(null);
 
   const stats = {
     total: tasks.length,
@@ -91,21 +95,93 @@ function App() {
     setTaskToDelete(id);
   };
 
+  // Persist any previous pending deletion before allowing another one.
+  const flushPendingDelete = async () => {
+    if (!pendingDelete) {
+      return;
+    }
+    window.clearTimeout(pendingDelete.timeoutId);
+    try {
+      await taskService.deleteTask(pendingDelete.task.id);
+    } catch (error) {
+      console.error(error);
+      setTasks((prev) => [pendingDelete.task, ...prev]);
+      showSnackbar('Errore durante eliminazione definitiva', 'error');
+    } finally {
+      setPendingDelete(null);
+      setUndoDeleteOpen(false);
+    }
+  };
+
+  const handleStatusChange = async (taskId: number, newStatus: Task['status']) => {
+    const currentTask = tasks.find((task) => task.id === taskId);
+    if (!currentTask || currentTask.status === newStatus) {
+      return;
+    }
+
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)));
+    try {
+      await taskService.updateTask(taskId, { status: newStatus });
+      showSnackbar('Stato task aggiornato', 'success');
+    } catch (error) {
+      console.error(error);
+      setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: currentTask.status } : task)));
+      const apiError = error as AxiosError<{ error?: string }>;
+      const apiMessage = apiError.response?.data?.error;
+      showSnackbar(apiMessage || 'Errore nell\'aggiornamento dello stato', 'error');
+    }
+  };
+
   // Confirm task deletion
   const handleConfirmDelete = async () => {
     if (taskToDelete === null) {
       return;
     }
 
+    await flushPendingDelete();
+
+    const task = tasks.find((item) => item.id === taskToDelete);
+    if (!task) {
+      setTaskToDelete(null);
+      return;
+    }
+
     try {
-      await taskService.deleteTask(taskToDelete);
-      showSnackbar('Task eliminata con successo! 🗑️', 'success');
-      await loadTasks();
+      setTasks((prev) => prev.filter((item) => item.id !== task.id));
+      const timeoutId = window.setTimeout(async () => {
+        try {
+          await taskService.deleteTask(task.id);
+          showSnackbar('Task eliminata in modo definitivo', 'success');
+        } catch (error) {
+          console.error(error);
+          setTasks((prev) => [task, ...prev]);
+          showSnackbar('Errore nell\'eliminazione della task', 'error');
+        } finally {
+          setPendingDelete(null);
+          setUndoDeleteOpen(false);
+        }
+      }, 5000);
+
+      setPendingDelete({ task, timeoutId });
+      setUndoDeleteOpen(true);
       setTaskToDelete(null);
     } catch (error) {
       showSnackbar('Errore nell\'eliminazione della task', 'error');
       console.error(error);
     }
+  };
+
+  const handleUndoDelete = () => {
+    if (!pendingDelete) {
+      setUndoDeleteOpen(false);
+      return;
+    }
+
+    window.clearTimeout(pendingDelete.timeoutId);
+    setTasks((prev) => [pendingDelete.task, ...prev]);
+    setPendingDelete(null);
+    setUndoDeleteOpen(false);
+    showSnackbar('Eliminazione annullata', 'success');
   };
 
   // Close delete confirmation
@@ -205,6 +281,7 @@ function App() {
           loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
         />
       </Paper>
 
@@ -233,6 +310,32 @@ function App() {
       </Dialog>
 
       {/* Notifications */}
+      <Snackbar
+        open={undoDeleteOpen}
+        autoHideDuration={5000}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setUndoDeleteOpen(false);
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert
+          severity="warning"
+          sx={{ width: '100%' }}
+          action={(
+            <Stack direction="row" spacing={1}>
+              <Button color="inherit" size="small" onClick={handleUndoDelete}>
+                ANNULLA
+              </Button>
+            </Stack>
+          )}
+        >
+          Task rimossa. Hai 5 secondi per annullare.
+        </Alert>
+      </Snackbar>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

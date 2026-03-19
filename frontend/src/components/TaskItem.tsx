@@ -1,10 +1,14 @@
 import { Card, CardContent, CardActions, Typography, Button, Chip, Box } from '@mui/material';
+import type { DragEvent } from 'react';
 import type { Task } from '../types/task.types';
 
 interface TaskItemProps {
     task: Task;
     onEdit: (task: Task) => void;
     onDelete: (id: number) => void;
+    draggable?: boolean;
+    onDragStart?: (event: DragEvent<HTMLElement>) => void;
+    onDragEnd?: (event: DragEvent<HTMLElement>) => void;
 }
 
 const priorityColors = {
@@ -46,14 +50,21 @@ const getPriorityLabel = (priority: unknown) => {
     return 'Sconosciuta';
 };
 
-export const TaskItem = ({ task, onEdit, onDelete }: TaskItemProps) => {
+export const TaskItem = ({ task, onEdit, onDelete, draggable = false, onDragStart, onDragEnd }: TaskItemProps) => {
     return (
         <Card
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
             sx={{
                 borderRadius: 3,
                 border: '1px solid rgba(23, 34, 38, 0.1)',
                 background: 'linear-gradient(145deg, #ffffff 0%, #f9fcfb 100%)',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                cursor: draggable ? 'grab' : 'default',
+                '&:active': {
+                    cursor: draggable ? 'grabbing' : 'default'
+                },
                 '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 14px 28px rgba(23, 34, 38, 0.08)'

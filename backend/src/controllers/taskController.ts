@@ -27,6 +27,26 @@ const isValidDateString = (value: string) => {
     return !Number.isNaN(parsed);
 };
 
+// MySQL can return DATE fields as Date objects depending on driver settings.
+const normalizeStoredReleaseDate = (value: unknown): string | null => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) {
+            return null;
+        }
+        return value.toISOString().slice(0, 10);
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    return null;
+};
+
 // Normalize request payload to avoid duplicated checks inside handlers.
 const normalizeTaskInput = (body: Request['body']) => {
     const title = typeof body.title === 'string' ? body.title.trim() : '';
@@ -145,14 +165,41 @@ export const updateTask = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'ID non valido' });
         }
 
-        const input = normalizeTaskInput(req.body);
+        const [existingRows] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [taskId]);
+
+        if (existingRows.length === 0) {
+            return res.status(404).json({ error: 'Task non trovata' });
+        }
+
+        const existingTask = existingRows[0];
+        const body = req.body as Record<string, unknown>;
+        const normalizedExistingReleaseDate = normalizeStoredReleaseDate(existingTask.release_date);
+
+        const input = {
+            title: Object.prototype.hasOwnProperty.call(body, 'title')
+                ? (typeof body.title === 'string' ? body.title.trim() : '')
+                : existingTask.title,
+            description: Object.prototype.hasOwnProperty.call(body, 'description')
+                ? (typeof body.description === 'string' ? body.description.trim() : '')
+                : (existingTask.description || ''),
+            priority: Object.prototype.hasOwnProperty.call(body, 'priority')
+                ? body.priority as Task['priority'] | undefined
+                : existingTask.priority,
+            status: Object.prototype.hasOwnProperty.call(body, 'status')
+                ? body.status as Task['status'] | undefined
+                : existingTask.status,
+            release_date: Object.prototype.hasOwnProperty.call(body, 'release_date')
+                ? (body.release_date === '' ? null : (body.release_date ?? null))
+                : normalizedExistingReleaseDate
+        };
+
         const errors = validateTaskInput(input);
 
         if (errors.length > 0) {
             return res.status(400).json({ error: errors.join('. ') });
         }
 
-        const [result] = await pool.query<ResultSetHeader>(
+        await pool.query<ResultSetHeader>(
             'UPDATE tasks SET title = ?, description = ?, priority = ?, status = ?, release_date = ? WHERE id = ?',
             [
                 input.title,
@@ -163,10 +210,6 @@ export const updateTask = async (req: Request, res: Response) => {
                 taskId
             ]
         );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Task non trovata' });
-        }
 
         const [updatedTask] = await pool.query<Task[]>('SELECT * FROM tasks WHERE id = ?', [taskId]);
 
